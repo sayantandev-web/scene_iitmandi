@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://research.iitmandi.ac.in/scene/uploads/masasih/sitemap.xml
