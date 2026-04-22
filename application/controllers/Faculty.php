@@ -70,9 +70,14 @@ class Faculty extends CI_Controller {
 
     public function filterByspetialization() {
         $fs_id = $this->input->post('fs_id');
-        $get_data = $this->db->query("SELECT iitmandi_team.id, iitmandi_team.fname,iitmandi_team.mname,iitmandi_team.lname,iitmandi_team.email,iitmandi_team.mobile,iitmandi_designation.designation,iitmandi_team.specialization,iitmandi_team.research_keyword,iitmandi_team.team_image from iitmandi_team JOIN iitmandi_designation ON iitmandi_team.designation = iitmandi_designation.id WHERE iitmandi_team.position = 1 AND iitmandi_team.specialization = $fs_id and iitmandi_team.status = 1 and iitmandi_team.is_delete = 1 ORDER BY fname ASC");
+        // Validate input: must be positive integer
+        if (empty($fs_id) || !ctype_digit($fs_id) || (int)$fs_id <= 0) {
+            echo '<p style="text-align: center;">Invalid specialization filter selected.</p>';
+            return;
+        }
+        //$get_data = $this->db->query("SELECT iitmandi_team.id, iitmandi_team.fname,iitmandi_team.mname,iitmandi_team.lname,iitmandi_team.email,iitmandi_team.mobile,iitmandi_designation.designation,iitmandi_team.specialization,iitmandi_team.research_keyword,iitmandi_team.team_image from iitmandi_team JOIN iitmandi_designation ON iitmandi_team.designation = iitmandi_designation.id WHERE iitmandi_team.position = 1 AND iitmandi_team.specialization = $fs_id and iitmandi_team.status = 1 and iitmandi_team.is_delete = 1 ORDER BY fname ASC");
 
-        if(!empty($get_data->result_array())) {
+        /*if(!empty($get_data->result_array())) {
             $html='';
             if(!empty($get_data->result_array())) {
                 foreach($get_data->result_array() as $row){
@@ -84,7 +89,45 @@ class Faculty extends CI_Controller {
         } else {
             $html='<p style="text-align: center;">No Data Found related to filter options you have selected.</p>';  
         }
-        echo $html;
-    }
+        echo $html;*/
 
+        $this->db->select('iitmandi_team.id, iitmandi_team.fname, iitmandi_team.mname, iitmandi_team.lname, iitmandi_team.email, iitmandi_team.mobile, iitmandi_designation.designation, iitmandi_team.specialization, iitmandi_team.research_keyword, iitmandi_team.team_image');
+        $this->db->from('iitmandi_team');
+        $this->db->join('iitmandi_designation', 'iitmandi_team.designation = iitmandi_designation.id');
+        $this->db->where('iitmandi_team.position', 1);
+        $this->db->where('iitmandi_team.specialization', $fs_id);
+        $this->db->where('iitmandi_team.status', 1);
+        $this->db->where('iitmandi_team.is_delete', 1);  // Show non-deleted only
+        $this->db->order_by('fname', 'ASC');
+        
+        $get_data = $this->db->get();
+
+        if ($get_data->num_rows() > 0) {
+            $html = '';
+            foreach ($get_data->result_array() as $row) {
+                $full_name = html_escape($row['fname'] . ' ' . $row['mname'] . ' ' . $row['lname']);  // XSS prevention
+                $designation = html_escape($row['designation']);
+                $research_keyword = html_escape($row['research_keyword']);
+                $team_image = $row['team_image'] ? base_url('uploads/our_team/' . $row['team_image']) : base_url('uploads/our_team/default.jpg');  // Fallback image
+                $faculty_url = base_url('pages/faculty_details/' . base64_encode($row['id']));
+                
+                $html .= '<div class="col-sm-6 col-xl-2 col-lg-2 col-md-6 col-12">';
+                $html .= '<div class="box_sec">';
+                $html .= '<a href="' . $faculty_url . '">';
+                $html .= '<img src="' . $team_image . '" alt="' . $full_name . '">';
+                $html .= '<div class="box_dwn">';
+                $html .= '<h6><a href="' . $faculty_url . '" style="text-decoration: none;">' . $full_name . '</a></h6>';
+                $html .= '<small>' . $designation . '</small>';
+                $html .= '<div class="box_dwn_inn"><p>' . $research_keyword . '</p></div>';
+                $html .= '</div></a>';
+                $html .= '<div class="social_sec">';
+                $html .= '<a href="mailto:' . html_escape($row['email']) . '"><i class="fa-regular fa-envelope"></i></a>';
+                $html .= '<a href="tel:' . html_escape($row['mobile']) . '"><i class="fa fa-phone" aria-hidden="true"></i></a>';
+                $html .= '</div></div></div>';
+            }
+            echo $html;
+        } else {
+            echo '<p style="text-align: center;">No Data Found related to filter options you have selected.</p>';
+        }
+    }
 }
